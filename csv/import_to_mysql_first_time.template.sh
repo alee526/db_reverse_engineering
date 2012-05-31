@@ -1,5 +1,6 @@
 #!/bin/sh
 
+default_user="root"
 dbpasswd="$1"
 your_dbname="$2"
 datadir="$3"
@@ -31,8 +32,24 @@ function gen_column()
     echo "$result"
 }
 
+function help_exit()
+{
+  echo "Usage:"
+  echo "$0 db_password db_name CSV_dir_path"
+  echo "Example:"
+  echo "$0 abc123 mydb ./da/source/csv/"
+  exit -1
+}
+
+if [ "x${dbpasswd}" = "x" -o "x${your_dbname}" = "x" -o "x${datadir}" = "x" ] ; then
+  echo "fail - missing required parameters, please make sure you have escapded punctioations and spaces with \"\"" 1>&2
+  help_exit
+fi
+
+echo "ok - applying default username ${default_user}"
+
 echo "DROP SCHEMA IF EXISTS ${your_dbname}; CREATE SCHEMA IF NOT EXISTS ${your_dbname}" 
-echo "DROP SCHEMA IF EXISTS ${your_dbname}; CREATE SCHEMA IF NOT EXISTS ${your_dbname};" | /usr/local/mysql/bin/mysql -u root --password=root
+echo "DROP SCHEMA IF EXISTS ${your_dbname}; CREATE SCHEMA IF NOT EXISTS ${your_dbname};" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
 
 for csvname in `find $datadir -type f -name "*.csv"`
 do
@@ -44,16 +61,16 @@ column=`gen_column $col_field`
 
 
 echo "USE ${your_dbname}; DROP TABLE IF EXISTS ${your_dbname}.$tbname" 
-echo "USE ${your_dbname}; DROP TABLE IF EXISTS ${your_dbname}.$tbname" | /usr/local/mysql/bin/mysql -u root --password=root
+echo "USE ${your_dbname}; DROP TABLE IF EXISTS ${your_dbname}.$tbname" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
 if [ $? -ne 0 ] ; then
   exit
 fi
 echo "USE ${your_dbname}; CREATE TABLE ${your_dbname}.$tbname ($column)" 
-echo "USE ${your_dbname}; CREATE TABLE ${your_dbname}.$tbname ($column) ENGINE=INNODB" | /usr/local/mysql/bin/mysql -u root --password=root
+echo "USE ${your_dbname}; CREATE TABLE ${your_dbname}.$tbname ($column) ENGINE=INNODB" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
 if [ $? -ne 0 ] ; then
   exit
 fi
-echo "USE ${your_dbname}; LOAD DATA LOCAL INFILE '$csvname' INTO TABLE ${your_dbname}.$tbname FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n';" | /usr/local/mysql/bin/mysql -u root --password=root
+echo "USE ${your_dbname}; LOAD DATA LOCAL INFILE '$csvname' INTO TABLE ${your_dbname}.$tbname FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n';" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
 if [ $? -ne 0 ] ; then
   exit
 fi
