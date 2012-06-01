@@ -4,6 +4,7 @@ default_user="root"
 dbpasswd="$1"
 your_dbname="$2"
 datadir="$3"
+extra_sql="$4"
 
 function gen_column()
 {
@@ -35,9 +36,10 @@ function gen_column()
 function help_exit()
 {
   echo "Usage:"
-  echo "$0 db_password db_name CSV_dir_path"
+  echo "$0 db_password db_name CSV_dir_path optional_extra_sql"
   echo "Example:"
   echo "$0 abc123 mydb ./da/source/csv/"
+  echo "$0 abc123 mydb ./da/source/csv/ ./sql/update_table_fields_types/"
   exit -1
 }
 
@@ -58,8 +60,6 @@ do
 col_field=`head -n 1 $csvname`
 column=`gen_column $col_field`
 
-
-
 echo "USE ${your_dbname}; DROP TABLE IF EXISTS ${your_dbname}.$tbname" 
 echo "USE ${your_dbname}; DROP TABLE IF EXISTS ${your_dbname}.$tbname" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
 if [ $? -ne 0 ] ; then
@@ -77,4 +77,11 @@ fi
 done
 
 
+if [ -d "$extra_sql" ] ; then
+  for sqlf in `find -s "$extra_sql" -type f -name "*.sql"`
+  do
+    echo "ok - importing extra SQL $sqlf"
+    /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd} -D ${your_dbname} < $sqlf
+  done  
+fi
 

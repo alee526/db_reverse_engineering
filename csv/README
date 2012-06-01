@@ -1,0 +1,27 @@
+NAME
+  import_to_mysql_first_time.template.sh -  a shell to load all CSV with 
+                                            default data types into database
+
+SYNOPSIS
+  import_to_mysql_first_time.template.sh db_password db_name CSV_dir_path [optional_extra_sql]
+
+DESCRIPTION
+  The shell will use default user 'root' to access the MySQL database.
+  This shell script will assume default data type for column name by
+  
+   _id - if the column name includes a suffix
+   date - if the column name include this string
+  
+  and for all first column in the CSV, they will be the PRIMARY_KEY for the 
+  table. See the following for more explanation on each parameters.
+
+  db_passwd - the password to access the MySQL database with root account
+  db_name   - the database/schema you want to create
+  CSV_dir_path  - the dir that contains all the CSV files, only files with *.csv will be loaded
+  optional_extra_sql - to override or provide any additional SQL statements to existing database created by db_name
+
+Usage:
+./import_to_mysql_first_time.template.sh db_password db_name CSV_dir_path optional_extra_sql
+Example:
+./import_to_mysql_first_time.template.sh abc123 mydb ./da/source/csv/
+./import_to_mysql_first_time.template.sh abc123 mydb ./da/source/csv/ ./sql/update_table_fields_types/
