@@ -3,7 +3,7 @@ NAME
                                             default data types into database
 
 SYNOPSIS
-  import_to_mysql_first_time.template.sh db_password db_name CSV_dir_path [optional_extra_sql]
+  import_to_mysql_first_time.template.sh -p db_password -d db_name -i CSV_dir_path [-s optional_extra_sql] [-t table1 table2]
 
 DESCRIPTION
   The shell will use default user 'root' to access the MySQL database.
@@ -20,8 +20,27 @@ DESCRIPTION
   CSV_dir_path  - the dir that contains all the CSV files, only files with *.csv will be loaded
   optional_extra_sql - to override or provide any additional SQL statements to existing database created by db_name
 
-Usage:
-./import_to_mysql_first_time.template.sh db_password db_name CSV_dir_path optional_extra_sql
-Example:
-./import_to_mysql_first_time.template.sh abc123 mydb ./da/source/csv/
-./import_to_mysql_first_time.template.sh abc123 mydb ./da/source/csv/ ./sql/update_table_fields_types/
+ 
+USAGE
+  ./import_to_mysql_first_time.template.sh options
+
+  This script import CSV files and create default table from CSV filename
+  by picking the prefix before the _ (underscore) in the filename. Additional
+  SQL can be trigger to update indexes, FK, etc afterward, and additional 
+  table can be reloaded once the SQL are triggered if the column datatype
+  were altered.
+
+  OPTIONS:
+   -h      Show this message
+   -d      database name
+   -p      root account password to access database specified by -d
+   -i      input folder to load all CSV files
+   -s      additional SQL files to run. If the file has a number prefix, 
+           numerical order is followed.
+   -t      additional table files to reload after option -s. The CSV file will
+           be reloaded by associating the table_name with the CSV files under
+           option -i 
+EXAMPLE
+  ./import_to_mysql_first_time.template.sh -p dbpasswd -d dbname -i csv_dir
+  ./import_to_mysql_first_time.template.sh -p dbpasswd -d dbname -i csv_dir -s sql_dir
+  ./import_to_mysql_first_time.template.sh -p dbpasswd -d mysql_db_name -i /home/foo/csvdir/ -s /home/foo/additional_sql/ -t table1 table2

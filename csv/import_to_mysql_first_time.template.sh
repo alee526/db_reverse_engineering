@@ -1,10 +1,11 @@
 #!/bin/sh
 
 default_user="root"
-dbpasswd="$1"
-your_dbname="$2"
-datadir="$3"
-extra_sql="$4"
+dbpasswd=""
+your_dbname=""
+datadir=""
+extra_sql=""
+extra_data=""
 
 function gen_column()
 {
@@ -33,19 +34,68 @@ function gen_column()
     echo "$result"
 }
 
-function help_exit()
+function usage()
 {
-  echo "Usage:"
-  echo "$0 db_password db_name CSV_dir_path optional_extra_sql"
-  echo "Example:"
-  echo "$0 abc123 mydb ./da/source/csv/"
-  echo "$0 abc123 mydb ./da/source/csv/ ./sql/update_table_fields_types/"
-  exit -1
+cat << EOF
+  usage: $0 options
+
+  This script import CSV files and create default table from CSV filename
+  by picking the prefix before the _ (underscore) in the filename. Additional
+  SQL can be trigger to update indexes, FK, etc afterward, and additional 
+  table can be reloaded once the SQL are triggered if the column datatype
+  were altered.
+
+  OPTIONS:
+   -h      Show this message
+   -d      database name
+   -p      root account password to access database specified by -d
+   -i      input folder to load all CSV files
+   -s      additional SQL files to run. If the file has a number prefix, 
+           numerical order is followed.
+   -t      additional table files to reload after option -s. The CSV file will
+           be reloaded by associating the table_name with the CSV files under
+           option -i
+
+  Example
+  $0 -p dbpasswd -d dbname -i csv_dir
+  $0 -p dbpasswd -d dbname -i csv_dir -s sql_dir
+  $0 -p dbpasswd -d mysql_db_name -i /home/foo/csvdir/ -s /home/foo/additional_sql/ -t "table1 table2"
+EOF
 }
+
+while getopts “hd:p:i:s:t:” OPTION
+do
+   case $OPTION in
+     h)
+       usage
+       exit 1
+       ;;
+     i)
+       datadir=$OPTARG
+       ;;
+     p)
+       dbpasswd=$OPTARG
+       ;;
+     d)
+       your_dbname=$OPTARG
+       ;;
+     s)
+       extra_sql=$OPTARG
+       ;;
+     t)
+       extra_data=$OPTARG
+       ;;
+     ?)
+       usage
+       exit
+       ;;
+   esac
+done
 
 if [ "x${dbpasswd}" = "x" -o "x${your_dbname}" = "x" -o "x${datadir}" = "x" ] ; then
   echo "fail - missing required parameters, please make sure you have escapded punctioations and spaces with \"\"" 1>&2
-  help_exit
+  usage
+  exit
 fi
 
 echo "ok - applying default username ${default_user}"
@@ -76,7 +126,6 @@ if [ $? -ne 0 ] ; then
 fi
 done
 
-
 if [ -d "$extra_sql" ] ; then
   for sqlf in `find -s "$extra_sql" -type f -name "*.sql"`
   do
@@ -84,4 +133,20 @@ if [ -d "$extra_sql" ] ; then
     /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd} -D ${your_dbname} < $sqlf
   done  
 fi
+
+if [ "x${extra_data}" != "x" ] ; then
+  for tablename in $extra_data
+  do
+    fname=`find $datadir -type f -name "$tablename*.csv"`
+    if [ ! -e "$fname" ] ; then
+      echo "warn - couldnt find $fname, skipping"
+      continue
+    else
+      echo "ok - re-importing data from $tablename"
+      echo "USE ${your_dbname}; LOAD DATA LOCAL INFILE '$fname' INTO TABLE ${your_dbname}.$tablename FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n';" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
+    fi
+  done
+fi
+
+
 
