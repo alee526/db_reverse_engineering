@@ -21,12 +21,17 @@ function gen_column()
       fi
       if [[ $i =~ "_id" ]] ; then
         result="$result\`${i}\` INT(11) NOT NULL,";
-      elif [[ $i =~ "date" ]] ; then
-        result="$result\`${i}\` DATETIME DEFAULT NULL,";
+      #elif [[ $i =~ "date" ]] ; then
+      #  result="$result\`${i}\` DATETIME DEFAULT NULL,";
       #elif [[ $i =~ "flag" ]] ; then
       #  result="$result\`${i}\` INT(11) NOT NULL,";
       else
-        result="$result\`${i}\` VARCHAR(128) DEFAULT NULL,";
+        if [ $i = $pppp ] ; then
+          # IF the first column is a text, primary key length reset to 767 (max)
+          result="$result\`${i}\` VARCHAR(767) DEFAULT NULL,";
+        else
+          result="$result\`${i}\` VARCHAR(1024) DEFAULT NULL,";
+        fi
       fi
     done
     result="$result PRIMARY KEY ($pppp)"
@@ -120,7 +125,7 @@ echo "USE ${your_dbname}; CREATE TABLE ${your_dbname}.$tbname ($column) ENGINE=I
 if [ $? -ne 0 ] ; then
   exit
 fi
-echo "USE ${your_dbname}; LOAD DATA LOCAL INFILE '$csvname' INTO TABLE ${your_dbname}.$tbname FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n';" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
+echo "USE ${your_dbname}; LOAD DATA LOCAL INFILE '$csvname' INTO TABLE ${your_dbname}.$tbname FIELDS TERMINATED BY ',' ENCLOSED BY '\"' ESCAPED BY '\"' LINES TERMINATED BY '\n';" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
 if [ $? -ne 0 ] ; then
   exit
 fi
@@ -143,7 +148,7 @@ if [ "x${extra_data}" != "x" ] ; then
       continue
     else
       echo "ok - re-importing data from $tablename"
-      echo "USE ${your_dbname}; LOAD DATA LOCAL INFILE '$fname' INTO TABLE ${your_dbname}.$tablename FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n';" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
+      echo "USE ${your_dbname}; LOAD DATA LOCAL INFILE '$fname' INTO TABLE ${your_dbname}.$tablename FIELDS TERMINATED BY ',' ENCLOSED BY '\"' ESCAPED BY '\"' LINES TERMINATED BY '\n';" | /usr/local/mysql/bin/mysql -u ${default_user} --password=${dbpasswd}
     fi
   done
 fi
