@@ -28,7 +28,7 @@ function gen_column()
       else
         if [ $i = $pppp ] ; then
           # IF the first column is a text, primary key length reset to 767 (max)
-          result="$result\`${i}\` VARCHAR(767) DEFAULT NULL,";
+          result="$result\`${i}\` VARCHAR(767) NOT NULL,";
         else
           result="$result\`${i}\` VARCHAR(1024) DEFAULT NULL,";
         fi
@@ -112,7 +112,7 @@ for csvname in `find $datadir -type f -name "*.csv"`
 do
   tbname=`basename $csvname | sed -e "s/\.csv$//g" | cut -d "-" -f1`
   echo "ok - importing $tbname with $csvname"
-col_field=`head -n 1 $csvname`
+col_field=`head -n 1 $csvname | tr -d '"'`
 column=`gen_column $col_field`
 
 echo "USE ${your_dbname}; DROP TABLE IF EXISTS ${your_dbname}.$tbname" 
